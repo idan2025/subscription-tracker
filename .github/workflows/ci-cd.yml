@@ -157,72 +157,23 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # Job 3: Deploy to Kubernetes (only on main branch)
-  deploy:
-    name: Deploy to Kubernetes
-    runs-on: ubuntu-latest
-    needs: build-and-scan
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Helm
-        uses: azure/setup-helm@v3
-        with:
-          version: 'v3.12.0'
-
-      - name: Set up kubectl
-        uses: azure/setup-kubectl@v3
-
-      # Configure kubeconfig (you'll need to set KUBE_CONFIG secret)
-      - name: Configure kubectl
-        run: |
-          mkdir -p $HOME/.kube
-          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
-          chmod 600 $HOME/.kube/config
-
-      - name: Verify cluster connection
-        run: kubectl cluster-info
-
-      - name: Update Helm dependencies
-        run: |
-          cd helm-charts/subscription-tracker
-          helm dependency update
-
-      - name: Deploy with Helm
-        run: |
-          helm upgrade --install subscription-tracker \
-            ./helm-charts/subscription-tracker \
-            --namespace subscription-tracker \
-            --create-namespace \
-            --set flask.image.tag=${{ github.sha }} \
-            --set flask.image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} \
-            --wait \
-            --timeout 5m
-
-      - name: Verify deployment
-        run: |
-          kubectl rollout status deployment/flask-app -n subscription-tracker
-          kubectl get pods -n subscription-tracker
-
-  # Job 4: Notify
+  # Job 3: Notify Build Status
   notify:
-    name: Notify Deployment Status
+    name: Notify Build Status
     runs-on: ubuntu-latest
-    needs: [lint-and-test, build-and-scan, deploy]
+    needs: [lint-and-test, build-and-scan]
     if: always()
-    
-    steps:
-      - name: Deployment Success
-        if: ${{ needs.deploy.result == 'success' }}
-        run: |
-          echo "✅ Deployment successful!"
-          echo "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
 
-      - name: Deployment Failed
-        if: ${{ needs.deploy.result == 'failure' }}
+    steps:
+      - name: Build Success
+        if: ${{ needs.build-and-scan.result == 'success' }}
         run: |
-          echo "❌ Deployment failed!"
+          echo "✅ Build and security scan successful!"
+          echo "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main"
+          echo "ArgoCD will automatically sync the latest image"
+
+      - name: Build Failed
+        if: ${{ needs.build-and-scan.result == 'failure' }}
+        run: |
+          echo "❌ Build or security scan failed!"
           exit 1
