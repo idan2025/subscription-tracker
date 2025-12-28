@@ -1,0 +1,18 @@
+apiVersion: v2
+name: subscription-tracker
+description: A Helm chart for Subscription Tracker application with MySQL database
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - subscription
+  - tracker
+  - flask
+  - mysql
+maintainers:
+  - name: idan2025
+    email: noreply@github.com
+sources:
+  - https://github.com/idan2025/subscription-tracker
+icon: https://raw.githubusercontent.com/idan2025/subscription-tracker/main/icon.png
+dependencies: []

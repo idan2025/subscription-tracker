@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Subscription Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+        }
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .navbar h1 {
+            font-size: 1.5rem;
+        }
+        .navbar-right {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        .navbar button, .navbar a {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.3s;
+        }
+        .navbar button:hover, .navbar a:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        }
+        .stat-card h3 {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+        .stat-card .value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #333;
+        }
+        .stat-card.monthly {
+            border-left: 4px solid #667eea;
+        }
+        .stat-card.yearly {
+            border-left: 4px solid #764ba2;
+        }
+        .stat-card.total {
+            border-left: 4px solid #48bb78;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+        .card h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #333;
+        }
+        .btn-danger {
+            background: #f56565;
+        }
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 14px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background: white;
+            margin: 50px auto;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 500px;
+            position: relative;
+        }
+        .close {
+            position: absolute;
+            right: 20px;
+            top: 15px;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #999;
+        }
+        .close:hover {
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #555;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .subscription-list {
+            display: grid;
+            gap: 15px;
+        }
+        .subscription-item {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 4px solid #667eea;
+        }
+        .subscription-item.streaming {
+            border-left-color: #e53e3e;
+        }
+        .subscription-item.productivity {
+            border-left-color: #38b2ac;
+        }
+        .subscription-item.gaming {
+            border-left-color: #9f7aea;
+        }
+        .subscription-item.fitness {
+            border-left-color: #48bb78;
+        }
+        .subscription-item.other {
+            border-left-color: #a0aec0;
+        }
+        .subscription-info h3 {
+            color: #333;
+            margin-bottom: 5px;
+        }
+        .subscription-info p {
+            color: #666;
+            font-size: 14px;
+        }
+        .subscription-cost {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #333;
+        }
+        .subscription-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge.active {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        .badge.cancelled {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+        .badge.paused {
+            background: #feebc8;
+            color: #7c2d12;
+        }
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .alert.warning {
+            background: #fef5e7;
+            border-left: 4px solid #f39c12;
+            color: #7d6608;
+        }
+        .category-chart {
+            margin-top: 20px;
+        }
+        .category-item {
+            margin-bottom: 15px;
+        }
+        .category-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        .category-bar {
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .category-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+        .empty-state img {
+            width: 200px;
+            opacity: 0.5;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <h1>💳 Subscription Tracker</h1>
+        <div class="navbar-right">
+            <span id="username"></span>
+            <a href="/admin" id="adminLink" style="display:none;">⚙️ Admin</a>
+            <a href="/logout">Logout</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="stat-card monthly">
+                <h3>Monthly Cost</h3>
+                <div class="value" id="monthlyCost">$0.00</div>
+            </div>
+            <div class="stat-card yearly">
+                <h3>Yearly Cost</h3>
+                <div class="value" id="yearlyCost">$0.00</div>
+            </div>
+            <div class="stat-card total">
+                <h3>Active Subscriptions</h3>
+                <div class="value" id="totalSubs">0</div>
+            </div>
+        </div>
+
+        <!-- Renewal Alerts -->
+        <div id="renewalAlerts"></div>
+
+        <!-- Actions -->
+        <div style="margin-bottom: 20px;">
+            <button class="btn" onclick="openAddModal()">➕ Add Subscription</button>
+        </div>
+
+        <!-- Subscriptions List -->
+        <div class="card">
+            <h2>Your Subscriptions</h2>
+            <div id="subscriptionsList" class="subscription-list"></div>
+        </div>
+
+        <!-- Category Breakdown -->
+        <div class="card">
+            <h2>Spending by Category</h2>
+            <div id="categoryChart" class="category-chart"></div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Subscription Modal -->
+    <div id="subscriptionModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2 id="modalTitle">Add Subscription</h2>
+            <form id="subscriptionForm">
+                <input type="hidden" id="subId">
+                <div class="form-group">
+                    <label for="name">Service Name *</label>
+                    <input type="text" id="name" required placeholder="e.g., Netflix, Spotify">
+                </div>
+                <div class="form-group">
+                    <label for="cost">Cost *</label>
+                    <input type="number" id="cost" step="0.01" required placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="billing_cycle">Billing Cycle *</label>
+                    <select id="billing_cycle" required>
+                        <option value="monthly">Monthly</option>
+                        <option value="yearly">Yearly</option>
+                        <option value="weekly">Weekly</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="renewal_date">Next Renewal Date *</label>
+                    <input type="date" id="renewal_date" required>
+                </div>
+                <div class="form-group">
+                    <label for="category">Category</label>
+                    <select id="category">
+                        <option value="streaming">Streaming</option>
+                        <option value="productivity">Productivity</option>
+                        <option value="gaming">Gaming</option>
+                        <option value="fitness">Fitness</option>
+                        <option value="music">Music</option>
+                        <option value="cloud">Cloud Storage</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="alternative_notes">Alternative Notes</label>
+                    <textarea id="alternative_notes" rows="3" placeholder="Note any cheaper alternatives..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="status">Status</label>
+                    <select id="status">
+                        <option value="active">Active</option>
+                        <option value="paused">Paused</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn">Save</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Check if user is admin and show admin link
+        fetch('/api/dashboard')
+            .then(res => res.json())
+            .then(() => {
+                // User is logged in, check if admin
+                const isAdmin = document.cookie.includes('is_admin=true');
+                if (isAdmin) {
+                    document.getElementById('adminLink').style.display = 'block';
+                }
+            });
+
+        // Load dashboard data
+        async function loadDashboard() {
+            try {
+                const response = await fetch('/api/dashboard');
+                const data = await response.json();
+                
+                document.getElementById('monthlyCost').textContent = '$' + data.monthly_cost.toFixed(2);
+                document.getElementById('yearlyCost').textContent = '$' + data.yearly_cost.toFixed(2);
+                document.getElementById('totalSubs').textContent = data.total_subscriptions;
+                
+                // Show renewal alerts
+                if (data.upcoming_renewals.length > 0) {
+                    let alertHTML = '<div class="alert warning">';
+                    alertHTML += '<strong>⚠️ Upcoming Renewals:</strong><br>';
+                    data.upcoming_renewals.forEach(sub => {
+                        alertHTML += `${sub.name} renews on ${sub.renewal_date} ($${sub.cost})<br>`;
+                    });
+                    alertHTML += '</div>';
+                    document.getElementById('renewalAlerts').innerHTML = alertHTML;
+                }
+                
+                // Category breakdown
+                renderCategories(data.categories);
+                
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+            }
+        }
+
+        // Load subscriptions
+        async function loadSubscriptions() {
+            try {
+                const response = await fetch('/api/subscriptions');
+                const subscriptions = await response.json();
+                
+                const container = document.getElementById('subscriptionsList');
+                
+                if (subscriptions.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <h3>No subscriptions yet</h3>
+                            <p>Click "Add Subscription" to get started</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                container.innerHTML = subscriptions.map(sub => `
+                    <div class="subscription-item ${sub.category}">
+                        <div class="subscription-info">
+                            <h3>${sub.name}</h3>
+                            <p>
+                                ${sub.billing_cycle} • Renews: ${sub.renewal_date}
+                                <span class="badge ${sub.status}">${sub.status}</span>
+                            </p>
+                            ${sub.alternative_notes ? `<p style="font-size: 12px; margin-top: 5px;">💡 ${sub.alternative_notes}</p>` : ''}
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 20px;">
+                            <div class="subscription-cost">$${sub.cost}</div>
+                            <div class="subscription-actions">
+                                <button class="btn btn-small btn-secondary" onclick="editSubscription(${sub.id})">Edit</button>
+                                <button class="btn btn-small btn-danger" onclick="deleteSubscription(${sub.id})">Delete</button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                console.error('Error loading subscriptions:', error);
+            }
+        }
+
+        // Render categories
+        function renderCategories(categories) {
+            const container = document.getElementById('categoryChart');
+            
+            if (!categories || categories.length === 0) {
+                container.innerHTML = '<p style="color: #999;">No data yet</p>';
+                return;
+            }
+            
+            const maxCost = Math.max(...categories.map(c => c.monthly_cost));
+            
+            container.innerHTML = categories.map(cat => `
+                <div class="category-item">
+                    <div class="category-header">
+                        <span>${cat.category || 'Other'} (${cat.count})</span>
+                        <span><strong>$${parseFloat(cat.monthly_cost).toFixed(2)}/mo</strong></span>
+                    </div>
+                    <div class="category-bar">
+                        <div class="category-fill" style="width: ${(cat.monthly_cost / maxCost) * 100}%"></div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Modal functions
+        function openAddModal() {
+            document.getElementById('modalTitle').textContent = 'Add Subscription';
+            document.getElementById('subscriptionForm').reset();
+            document.getElementById('subId').value = '';
+            document.getElementById('subscriptionModal').style.display = 'block';
+        }
+
+        async function editSubscription(id) {
+            const response = await fetch('/api/subscriptions');
+            const subscriptions = await response.json();
+            const sub = subscriptions.find(s => s.id === id);
+            
+            if (sub) {
+                document.getElementById('modalTitle').textContent = 'Edit Subscription';
+                document.getElementById('subId').value = sub.id;
+                document.getElementById('name').value = sub.name;
+                document.getElementById('cost').value = sub.cost;
+                document.getElementById('billing_cycle').value = sub.billing_cycle;
+                document.getElementById('renewal_date').value = sub.renewal_date;
+                document.getElementById('category').value = sub.category;
+                document.getElementById('alternative_notes').value = sub.alternative_notes || '';
+                document.getElementById('status').value = sub.status;
+                document.getElementById('subscriptionModal').style.display = 'block';
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('subscriptionModal').style.display = 'none';
+        }
+
+        // Form submission
+        document.getElementById('subscriptionForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const subId = document.getElementById('subId').value;
+            const data = {
+                name: document.getElementById('name').value,
+                cost: parseFloat(document.getElementById('cost').value),
+                billing_cycle: document.getElementById('billing_cycle').value,
+                renewal_date: document.getElementById('renewal_date').value,
+                category: document.getElementById('category').value,
+                alternative_notes: document.getElementById('alternative_notes').value,
+                status: document.getElementById('status').value
+            };
+            
+            try {
+                const url = subId ? `/api/subscriptions/${subId}` : '/api/subscriptions';
+                const method = subId ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (response.ok) {
+                    closeModal();
+                    loadSubscriptions();
+                    loadDashboard();
+                } else {
+                    alert('Error saving subscription');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error saving subscription');
+            }
+        });
+
+        // Delete subscription
+        async function deleteSubscription(id) {
+            if (!confirm('Are you sure you want to delete this subscription?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/subscriptions/${id}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    loadSubscriptions();
+                    loadDashboard();
+                } else {
+                    alert('Error deleting subscription');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error deleting subscription');
+            }
+        }
+
+        // Close modal on outside click
+        window.onclick = function(event) {
+            const modal = document.getElementById('subscriptionModal');
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+
+        // Load data on page load
+        loadDashboard();
+        loadSubscriptions();
+    </script>
+</body>
+</html>

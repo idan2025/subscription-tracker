@@ -1,0 +1,66 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: subscription-tracker
+  namespace: argocd
+  # Finalizer ensures cascading delete
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  # The project the application belongs to
+  project: default
+
+  # Source configuration
+  source:
+    repoURL: https://github.com/idan2025/subscription-tracker.git
+    targetRevision: HEAD
+    path: helm-charts/subscription-tracker
+    helm:
+      # Helm values overrides
+      values: |
+        flask:
+          image:
+            repository: idan2025/subscription-tracker
+            tag: latest
+          replicaCount: 2
+        mysql:
+          enabled: true
+          persistence:
+            size: 10Gi
+        loadBalancer:
+          enabled: true
+
+  # Destination cluster and namespace
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: subscription-tracker
+
+  # Sync policy
+  syncPolicy:
+    automated:
+      # Automatically sync when changes are detected
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+
+  # Ignore differences in certain fields
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
+
+  # Health assessment
+  info:
+    - name: 'URL'
+      value: 'https://subscription-tracker.yourdomain.com'

@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Subscription Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+        }
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .navbar h1 {
+            font-size: 1.5rem;
+        }
+        .navbar a {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            transition: background 0.3s;
+        }
+        .navbar a:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+        .card h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 25px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 0;
+        }
+        .checkbox-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        .checkbox-group label {
+            margin: 0;
+            cursor: pointer;
+            font-weight: normal;
+        }
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #333;
+        }
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .alert.success {
+            background: #c6f6d5;
+            color: #22543d;
+            border-left: 4px solid #38a169;
+        }
+        .alert.error {
+            background: #fed7d7;
+            color: #742a2a;
+            border-left: 4px solid #e53e3e;
+        }
+        .info-box {
+            background: #ebf8ff;
+            border-left: 4px solid #3182ce;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        .info-box p {
+            color: #2c5282;
+            margin: 5px 0;
+        }
+        .provider-section {
+            border: 2px solid #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .provider-section.active {
+            border-color: #667eea;
+            background: #f7fafc;
+        }
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #667eea;
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <h1>⚙️ Admin Panel</h1>
+        <div>
+            <a href="/">← Back to Dashboard</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div id="alertMessage" class="alert"></div>
+
+        <div class="card">
+            <h2>AI Assistant Configuration</h2>
+            
+            <div class="info-box">
+                <strong>ℹ️ About AI Features:</strong>
+                <p>Enable AI-powered features to help users find cheaper alternatives, analyze spending patterns, and get personalized recommendations.</p>
+                <p><strong>Privacy Note:</strong> When AI is disabled, the app works as a standard subscription tracker with no external API calls.</p>
+            </div>
+
+            <form id="settingsForm">
+                <!-- Enable AI Toggle -->
+                <div class="form-group">
+                    <label>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span>Enable AI Features</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="ai_enabled">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </label>
+                </div>
+
+                <div id="aiProviderSection" style="display: none;">
+                    <!-- AI Provider Selection -->
+                    <div class="form-group">
+                        <label for="ai_provider">AI Provider</label>
+                        <select id="ai_provider">
+                            <option value="none">None (Disabled)</option>
+                            <option value="claude">Claude (Anthropic)</option>
+                            <option value="openai">OpenAI GPT</option>
+                            <option value="ollama">Ollama (Self-hosted)</option>
+                        </select>
+                    </div>
+
+                    <!-- Claude Configuration -->
+                    <div id="claudeSection" class="provider-section" style="display: none;">
+                        <h3>🤖 Claude API Configuration</h3>
+                        <div class="form-group">
+                            <label for="api_key">Anthropic API Key</label>
+                            <input type="password" id="api_key" placeholder="sk-ant-...">
+                            <small style="color: #666;">Get your API key from: <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a></small>
+                        </div>
+                    </div>
+
+                    <!-- OpenAI Configuration -->
+                    <div id="openaiSection" class="provider-section" style="display: none;">
+                        <h3>🤖 OpenAI API Configuration</h3>
+                        <div class="form-group">
+                            <label for="api_key">OpenAI API Key</label>
+                            <input type="password" id="api_key_openai" placeholder="sk-...">
+                            <small style="color: #666;">Get your API key from: <a href="https://platform.openai.com" target="_blank">platform.openai.com</a></small>
+                        </div>
+                    </div>
+
+                    <!-- Ollama Configuration -->
+                    <div id="ollamaSection" class="provider-section" style="display: none;">
+                        <h3>🤖 Ollama Configuration</h3>
+                        <div class="form-group">
+                            <label for="ollama_url">Ollama Server URL</label>
+                            <input type="text" id="ollama_url" placeholder="http://localhost:11434">
+                            <small style="color: #666;">Self-hosted Ollama server address</small>
+                        </div>
+                    </div>
+
+                    <!-- Feature Toggles -->
+                    <div class="form-group" style="margin-top: 30px;">
+                        <label><strong>Enabled Features</strong></label>
+                        
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="feature_alternatives">
+                            <label for="feature_alternatives">Smart Alternatives Finder - AI searches web for cheaper options</label>
+                        </div>
+                        
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="feature_chat">
+                            <label for="feature_chat">AI Chat Assistant - Conversational interface for queries</label>
+                        </div>
+                        
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="feature_analysis">
+                            <label for="feature_analysis">Spending Analysis - AI-powered insights and recommendations</label>
+                        </div>
+                        
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="feature_recommendations">
+                            <label for="feature_recommendations">Personalized Recommendations - Tailored suggestions based on usage</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 30px;">
+                    <button type="submit" class="btn">💾 Save Settings</button>
+                    <button type="button" class="btn btn-secondary" onclick="testConnection()">🔌 Test Connection</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>Current Status</h2>
+            <div id="statusDisplay">
+                <p><strong>AI Status:</strong> <span id="statusAI">Disabled</span></p>
+                <p><strong>Provider:</strong> <span id="statusProvider">None</span></p>
+                <p><strong>Active Features:</strong> <span id="statusFeatures">None</span></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Load current settings
+        async function loadSettings() {
+            try {
+                const response = await fetch('/api/admin/settings');
+                const settings = await response.json();
+                
+                document.getElementById('ai_enabled').checked = settings.ai_enabled;
+                document.getElementById('ai_provider').value = settings.ai_provider;
+                document.getElementById('feature_alternatives').checked = settings.feature_alternatives;
+                document.getElementById('feature_chat').checked = settings.feature_chat;
+                document.getElementById('feature_analysis').checked = settings.feature_analysis;
+                document.getElementById('feature_recommendations').checked = settings.feature_recommendations;
+                
+                updateProviderSections();
+                toggleAISection();
+                updateStatus(settings);
+                
+            } catch (error) {
+                console.error('Error loading settings:', error);
+            }
+        }
+
+        // Toggle AI section visibility
+        function toggleAISection() {
+            const aiEnabled = document.getElementById('ai_enabled').checked;
+            document.getElementById('aiProviderSection').style.display = aiEnabled ? 'block' : 'none';
+        }
+
+        // Update provider sections
+        function updateProviderSections() {
+            const provider = document.getElementById('ai_provider').value;
+            
+            document.getElementById('claudeSection').style.display = 'none';
+            document.getElementById('openaiSection').style.display = 'none';
+            document.getElementById('ollamaSection').style.display = 'none';
+            
+            if (provider === 'claude') {
+                document.getElementById('claudeSection').style.display = 'block';
+                document.getElementById('claudeSection').classList.add('active');
+            } else if (provider === 'openai') {
+                document.getElementById('openaiSection').style.display = 'block';
+                document.getElementById('openaiSection').classList.add('active');
+            } else if (provider === 'ollama') {
+                document.getElementById('ollamaSection').style.display = 'block';
+                document.getElementById('ollamaSection').classList.add('active');
+            }
+        }
+
+        // Update status display
+        function updateStatus(settings) {
+            document.getElementById('statusAI').textContent = settings.ai_enabled ? '✅ Enabled' : '❌ Disabled';
+            document.getElementById('statusProvider').textContent = settings.ai_provider.charAt(0).toUpperCase() + settings.ai_provider.slice(1);
+            
+            const features = [];
+            if (settings.feature_alternatives) features.push('Alternatives');
+            if (settings.feature_chat) features.push('Chat');
+            if (settings.feature_analysis) features.push('Analysis');
+            if (settings.feature_recommendations) features.push('Recommendations');
+            
+            document.getElementById('statusFeatures').textContent = features.length > 0 ? features.join(', ') : 'None';
+        }
+
+        // Event listeners
+        document.getElementById('ai_enabled').addEventListener('change', toggleAISection);
+        document.getElementById('ai_provider').addEventListener('change', updateProviderSections);
+
+        // Save settings
+        document.getElementById('settingsForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const provider = document.getElementById('ai_provider').value;
+            let apiKey = null;
+            
+            if (provider === 'claude') {
+                apiKey = document.getElementById('api_key').value;
+            } else if (provider === 'openai') {
+                apiKey = document.getElementById('api_key_openai').value;
+            } else if (provider === 'ollama') {
+                apiKey = document.getElementById('ollama_url').value;
+            }
+            
+            const data = {
+                ai_enabled: document.getElementById('ai_enabled').checked,
+                ai_provider: provider,
+                api_key: apiKey,
+                feature_alternatives: document.getElementById('feature_alternatives').checked,
+                feature_chat: document.getElementById('feature_chat').checked,
+                feature_analysis: document.getElementById('feature_analysis').checked,
+                feature_recommendations: document.getElementById('feature_recommendations').checked
+            };
+            
+            try {
+                const response = await fetch('/api/admin/settings', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showAlert('Settings saved successfully!', 'success');
+                    loadSettings();
+                } else {
+                    showAlert('Error saving settings: ' + (result.error || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('Error saving settings', 'error');
+            }
+        });
+
+        // Test connection
+        async function testConnection() {
+            const provider = document.getElementById('ai_provider').value;
+            
+            if (provider === 'none') {
+                showAlert('Please select an AI provider first', 'error');
+                return;
+            }
+            
+            showAlert('Testing connection... (This feature will be implemented)', 'success');
+        }
+
+        // Show alert
+        function showAlert(message, type) {
+            const alertDiv = document.getElementById('alertMessage');
+            alertDiv.textContent = message;
+            alertDiv.className = `alert ${type}`;
+            alertDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                alertDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        // Load settings on page load
+        loadSettings();
+    </script>
+</body>
+</html>

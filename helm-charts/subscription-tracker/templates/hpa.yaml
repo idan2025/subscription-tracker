@@ -1,0 +1,25 @@
+{{- if .Values.flask.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ .Values.flask.name }}-hpa
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ .Values.flask.name }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    release: {{ .Release.Name }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ .Values.flask.name }}
+  minReplicas: {{ .Values.flask.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.flask.autoscaling.maxReplicas }}
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: {{ .Values.flask.autoscaling.targetCPUUtilizationPercentage }}
+{{- end }}

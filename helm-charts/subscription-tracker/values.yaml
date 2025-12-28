@@ -1,0 +1,116 @@
+# Default values for subscription-tracker
+
+# Global settings
+namespace: subscription-tracker
+
+# Flask Application settings
+flask:
+  name: flask-app
+  replicaCount: 2
+  image:
+    repository: idan2025/subscription-tracker
+    tag: latest
+    pullPolicy: Always
+  service:
+    type: ClusterIP
+    port: 5000
+    nodePort: 30080  # Only used if type is NodePort
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
+  env:
+    FLASK_ENV: "production"
+    DB_HOST: "mysql-service"
+    DB_PORT: "3306"
+    DB_USER: "root"
+    DB_NAME: "subscription_tracker"
+  secrets:
+    secretKey: "your-super-secret-key-change-in-production-minimum-32-chars"
+    dbPassword: "rootpassword"
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 80
+
+# MySQL Database settings
+mysql:
+  enabled: true
+  name: mysql
+  image:
+    repository: mysql
+    tag: "8.0"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 3306
+  persistence:
+    enabled: true
+    storageClass: ""  # Use default storage class
+    accessMode: ReadWriteOnce
+    size: 5Gi
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  secrets:
+    rootPassword: "rootpassword"
+    userPassword: "dbuserpassword"
+  config:
+    database: "subscription_tracker"
+    user: "dbuser"
+
+# LoadBalancer settings
+loadBalancer:
+  enabled: true
+  port: 80
+  targetPort: 5000
+  sessionAffinity: ClientIP
+  sessionAffinityTimeout: 10800
+
+# Ingress settings
+ingress:
+  enabled: false
+  className: "nginx"
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    - host: subscription-tracker.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+    # - secretName: subscription-tracker-tls
+    #   hosts:
+    #     - subscription-tracker.example.com
+
+# Monitoring (Optional - for future expansion)
+monitoring:
+  enabled: false
+  prometheus:
+    enabled: false
+  grafana:
+    enabled: false
+
+# Security settings
+securityContext:
+  runAsNonRoot: false
+  runAsUser: 0
+
+# Pod disruption budget
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 1
+
+# Network policies
+networkPolicy:
+  enabled: false

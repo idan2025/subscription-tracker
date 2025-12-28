@@ -1,0 +1,96 @@
+Subscription Tracker has been deployed!
+
+Release Name: {{ .Release.Name }}
+Namespace: {{ .Values.namespace }}
+
+Installation Summary:
+==================================================
+
+Flask Application:
+   - Replicas: {{ .Values.flask.replicaCount }}
+   - Image: {{ .Values.flask.image.repository }}:{{ .Values.flask.image.tag }}
+   - Service Type: {{ .Values.flask.service.type }}
+
+{{- if .Values.mysql.enabled }}
+MySQL Database:
+   - Image: {{ .Values.mysql.image.repository }}:{{ .Values.mysql.image.tag }}
+   - Database: {{ .Values.mysql.config.database }}
+   - Storage: {{ .Values.mysql.persistence.size }}
+{{- else }}
+WARNING: MySQL is disabled - using external database
+{{- end }}
+
+==================================================
+
+Access Your Application:
+
+{{- if .Values.loadBalancer.enabled }}
+1. LoadBalancer Service:
+   
+   Get the LoadBalancer IP:
+   $ kubectl get svc flask-loadbalancer -n {{ .Values.namespace }}
+   
+   Then visit: http://<EXTERNAL-IP>
+
+{{- end }}
+
+{{- if eq .Values.flask.service.type "NodePort" }}
+2. NodePort Service:
+   
+   Get the Node IP:
+   $ kubectl get nodes -o wide
+   
+   Then visit: http://<NODE-IP>:{{ .Values.flask.service.nodePort }}
+
+{{- end }}
+
+{{- if .Values.ingress.enabled }}
+3. Ingress:
+   {{- range .Values.ingress.hosts }}
+   - http://{{ .host }}
+   {{- end }}
+{{- end }}
+
+3. Port Forward (for local testing):
+   $ kubectl port-forward svc/flask-service -n {{ .Values.namespace }} 8080:5000
+   
+   Then visit: http://localhost:8080
+
+==================================================
+
+Check Deployment Status:
+
+$ kubectl get all -n {{ .Values.namespace }}
+$ kubectl get pods -n {{ .Values.namespace }} -w
+
+View Logs:
+
+Flask App:
+$ kubectl logs -f deployment/{{ .Values.flask.name }} -n {{ .Values.namespace }}
+
+{{- if .Values.mysql.enabled }}
+MySQL:
+$ kubectl logs -f statefulset/{{ .Values.mysql.name }} -n {{ .Values.namespace }}
+{{- end }}
+
+==================================================
+
+First Time Setup:
+
+1. Register a new account at /register
+2. Login at /login
+3. Create your first admin user:
+   $ kubectl exec -it deployment/{{ .Values.flask.name }} -n {{ .Values.namespace }} -- \
+     mysql -h mysql-service -u root -p{{ .Values.mysql.secrets.rootPassword }} {{ .Values.mysql.config.database }} \
+     -e "UPDATE users SET is_admin = TRUE WHERE username = 'your-username';"
+
+==================================================
+
+Documentation:
+
+For more information, visit:
+https://github.com/idan2025/subscription-tracker
+
+Need help? Check the README.md or submit an issue!
+
+==================================================
