@@ -105,7 +105,7 @@ jobs:
           severity: 'CRITICAL,HIGH'
 
       - name: Upload Trivy filesystem scan results
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: 'trivy-fs-results.sarif'
@@ -123,7 +123,7 @@ jobs:
           exit-code: '0'  # Don't fail on vulnerabilities (change to 1 to fail)
 
       - name: Upload Trivy image scan results
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: 'trivy-image-results.sarif'
