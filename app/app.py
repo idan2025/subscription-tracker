@@ -6,6 +6,8 @@ from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 import secrets
+from ai_providers import AIProviderFactory
+import ai_services
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', secrets.token_hex(32))
@@ -71,6 +73,7 @@ def init_db():
                     ai_enabled BOOLEAN DEFAULT FALSE,
                     ai_provider ENUM('none', 'claude', 'openai', 'ollama') DEFAULT 'none',
                     api_key_encrypted TEXT,
+                    ollama_model VARCHAR(100) DEFAULT 'llama3.2',
                     feature_alternatives BOOLEAN DEFAULT FALSE,
                     feature_chat BOOLEAN DEFAULT FALSE,
                     feature_analysis BOOLEAN DEFAULT FALSE,
@@ -81,10 +84,27 @@ def init_db():
             
             # Insert default admin settings
             cursor.execute("""
-                INSERT IGNORE INTO admin_settings (id, ai_enabled, ai_provider) 
+                INSERT IGNORE INTO admin_settings (id, ai_enabled, ai_provider)
                 VALUES (1, FALSE, 'none')
             """)
-            
+
+            # Migration: Add ollama_model column if it doesn't exist
+            cursor.execute("""
+                SELECT COUNT(*) as count
+                FROM information_schema.COLUMNS
+                WHERE TABLE_SCHEMA = %s
+                AND TABLE_NAME = 'admin_settings'
+                AND COLUMN_NAME = 'ollama_model'
+            """, (DB_CONFIG['database'],))
+            result = cursor.fetchone()
+            if result[0] == 0:
+                cursor.execute("""
+                    ALTER TABLE admin_settings
+                    ADD COLUMN ollama_model VARCHAR(100) DEFAULT 'llama3.2'
+                    AFTER api_key_encrypted
+                """)
+                print("Added ollama_model column to admin_settings table")
+
             connection.commit()
             cursor.close()
             connection.close()
@@ -511,11 +531,15 @@ def admin_settings():
             settings = cursor.fetchone()
             cursor.close()
             connection.close()
-            
+
             # Don't send the actual API key
-            if settings and settings['api_key_encrypted']:
+            if settings and settings.get('api_key_encrypted'):
                 settings['api_key_encrypted'] = '***REDACTED***'
-            
+
+            # Ensure ollama_model has a default value
+            if settings and not settings.get('ollama_model'):
+                settings['ollama_model'] = 'llama3.2'
+
             return jsonify(settings), 200
         except Error as e:
             return jsonify({'error': str(e)}), 500
@@ -525,15 +549,17 @@ def admin_settings():
         try:
             cursor = connection.cursor()
             cursor.execute("""
-                UPDATE admin_settings 
+                UPDATE admin_settings
                 SET ai_enabled = %s, ai_provider = %s, api_key_encrypted = %s,
-                    feature_alternatives = %s, feature_chat = %s, 
+                    ollama_model = %s,
+                    feature_alternatives = %s, feature_chat = %s,
                     feature_analysis = %s, feature_recommendations = %s
                 WHERE id = 1
             """, (
                 data.get('ai_enabled', False),
                 data.get('ai_provider', 'none'),
                 data.get('api_key', None),  # In production, encrypt this
+                data.get('ollama_model', 'llama3.2'),
                 data.get('feature_alternatives', False),
                 data.get('feature_chat', False),
                 data.get('feature_analysis', False),
@@ -545,6 +571,171 @@ def admin_settings():
             return jsonify({'message': 'Settings updated successfully'}), 200
         except Error as e:
             return jsonify({'error': str(e)}), 500
+
+# ============ AI FEATURE ROUTES ============
+
+@app.route('/api/ai/ollama/models', methods=['POST'])
+@admin_required
+def get_ollama_models():
+    """Fetch available models from Ollama server"""
+    data = request.get_json()
+    server_url = data.get('server_url')
+
+    if not server_url:
+        return jsonify({'error': 'Server URL required'}), 400
+
+    try:
+        import requests
+        server_url = server_url.rstrip('/')
+        response = requests.get(f"{server_url}/api/tags", timeout=10)
+
+        if response.status_code == 200:
+            models_data = response.json()
+            models = [model['name'] for model in models_data.get('models', [])]
+            return jsonify({'models': models}), 200
+        else:
+            return jsonify({'error': f'Failed to fetch models: HTTP {response.status_code}'}), 400
+
+    except requests.exceptions.ConnectionError:
+        return jsonify({'error': 'Cannot connect to Ollama server. Is it running?'}), 400
+    except requests.exceptions.Timeout:
+        return jsonify({'error': 'Request timed out'}), 408
+    except Exception as e:
+        return jsonify({'error': f'Error: {str(e)}'}), 500
+
+@app.route('/api/ai/test-connection', methods=['POST'])
+@admin_required
+def test_ai_connection():
+    """Test connection to AI provider"""
+    data = request.get_json()
+    provider = data.get('provider')
+    api_key = data.get('api_key')
+    ollama_model = data.get('ollama_model', 'llama3.2')
+
+    if not provider or not api_key:
+        return jsonify({'error': 'Provider and API key required'}), 400
+
+    try:
+        # Create provider instance
+        if provider == 'ollama':
+            from ai_providers import OllamaProvider
+            ai_provider = OllamaProvider(api_key, ollama_model)
+        else:
+            ai_provider = AIProviderFactory.get_provider(provider, api_key)
+
+        # Test connection
+        result = ai_provider.test_connection()
+
+        if result['success']:
+            return jsonify(result), 200
+        else:
+            return jsonify(result), 400
+
+    except ValueError as e:
+        return jsonify({
+            'success': False,
+            'message': str(e),
+            'provider': provider
+        }), 400
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Connection test failed: {str(e)}',
+            'provider': provider
+        }), 500
+
+@app.route('/api/ai/settings', methods=['GET'])
+@login_required
+def get_ai_status():
+    """Get AI feature availability (not API keys)"""
+    connection = get_db_connection()
+    if not connection:
+        return jsonify({'error': 'Database connection failed'}), 503
+
+    try:
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM admin_settings WHERE id = 1")
+        settings = cursor.fetchone()
+        cursor.close()
+        connection.close()
+
+        if not settings:
+            return jsonify({
+                'ai_enabled': False,
+                'ai_provider': 'none',
+                'feature_alternatives': False,
+                'feature_chat': False,
+                'feature_analysis': False,
+                'feature_recommendations': False
+            }), 200
+
+        # Return only safe fields (NO API keys)
+        return jsonify({
+            'ai_enabled': settings.get('ai_enabled', False),
+            'ai_provider': settings.get('ai_provider', 'none'),
+            'feature_alternatives': settings.get('feature_alternatives', False),
+            'feature_chat': settings.get('feature_chat', False),
+            'feature_analysis': settings.get('feature_analysis', False),
+            'feature_recommendations': settings.get('feature_recommendations', False)
+        }), 200
+
+    except Error as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/ai/alternatives/<int:sub_id>', methods=['GET'])
+@login_required
+def get_alternatives(sub_id):
+    """Get AI-powered alternatives for a subscription"""
+    try:
+        result = ai_services.find_alternatives(sub_id, session['user_id'])
+        status = result.pop('status', 200)
+        return jsonify(result), status
+    except Exception as e:
+        app.logger.error(f"Alternatives error: {e}")
+        return jsonify({'error': 'AI service unavailable'}), 503
+
+@app.route('/api/ai/analysis', methods=['GET'])
+@login_required
+def get_analysis():
+    """Get AI-powered spending analysis"""
+    try:
+        result = ai_services.get_spending_analysis(session['user_id'])
+        status = result.pop('status', 200)
+        return jsonify(result), status
+    except Exception as e:
+        app.logger.error(f"Analysis error: {e}")
+        return jsonify({'error': 'AI service unavailable'}), 503
+
+@app.route('/api/ai/recommendations', methods=['GET'])
+@login_required
+def get_recommendations_route():
+    """Get personalized recommendations"""
+    try:
+        result = ai_services.get_recommendations(session['user_id'])
+        status = result.pop('status', 200)
+        return jsonify(result), status
+    except Exception as e:
+        app.logger.error(f"Recommendations error: {e}")
+        return jsonify({'error': 'AI service unavailable'}), 503
+
+@app.route('/api/ai/chat', methods=['POST'])
+@login_required
+def chat():
+    """Chat with AI assistant"""
+    data = request.get_json()
+    message = data.get('message')
+    history = data.get('history', [])
+
+    if not message:
+        return jsonify({'error': 'Message required'}), 400
+
+    try:
+        result = ai_services.chat_with_ai(message, session['user_id'], history)
+        status = result.pop('status', 200)
+        return jsonify(result), status
+    except Exception as e:
+        app.logger.error(f"Chat error: {e}")
+        return jsonify({'error': 'AI service unavailable'}), 503
 
 if __name__ == '__main__':
     init_db()

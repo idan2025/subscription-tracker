@@ -5,6 +5,50 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Subscription Tracker</title>
     <style>
+        :root {
+            /* Light mode colors (fallback) */
+            --bg-primary: #1a202c;
+            --bg-secondary: #2d3748;
+            --bg-tertiary: #4a5568;
+            --text-primary: #e2e8f0;
+            --text-secondary: #cbd5e0;
+            --text-muted: #a0aec0;
+            --border-color: #4a5568;
+            --card-bg: #2d3748;
+            --input-bg: #1a202c;
+            --input-border: #4a5568;
+            --modal-bg: #2d3748;
+            --subscription-item-bg: #4a5568;
+            --chat-user-bg: #2c5282;
+            --chat-user-border: #2b6cb0;
+            --chat-ai-bg: #2d3748;
+            --chat-ai-border: #4a5568;
+            --stat-text: #a0aec0;
+            --empty-state-text: #718096;
+        }
+
+        body.light-mode {
+            /* Light mode colors */
+            --bg-primary: #f5f7fa;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f8f9fa;
+            --text-primary: #333333;
+            --text-secondary: #555555;
+            --text-muted: #666666;
+            --border-color: #ddd;
+            --card-bg: #ffffff;
+            --input-bg: #ffffff;
+            --input-border: #ddd;
+            --modal-bg: #ffffff;
+            --subscription-item-bg: #f8f9fa;
+            --chat-user-bg: #ebf8ff;
+            --chat-user-border: #bee3f8;
+            --chat-ai-bg: #ffffff;
+            --chat-ai-border: #e2e8f0;
+            --stat-text: #666666;
+            --empty-state-text: #999999;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -12,8 +56,9 @@
         }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f5f7fa;
+            background: var(--bg-primary);
             min-height: 100vh;
+            transition: background 0.3s ease;
         }
         .navbar {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -57,21 +102,22 @@
             margin-bottom: 30px;
         }
         .stat-card {
-            background: white;
+            background: var(--card-bg);
             padding: 25px;
             border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            transition: background 0.3s ease;
         }
         .stat-card h3 {
             font-size: 0.9rem;
-            color: #666;
+            color: var(--stat-text);
             margin-bottom: 10px;
             text-transform: uppercase;
         }
         .stat-card .value {
             font-size: 2rem;
             font-weight: bold;
-            color: #333;
+            color: var(--text-primary);
         }
         .stat-card.monthly {
             border-left: 4px solid #667eea;
@@ -83,15 +129,16 @@
             border-left: 4px solid #48bb78;
         }
         .card {
-            background: white;
+            background: var(--card-bg);
             border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
             padding: 25px;
             margin-bottom: 20px;
+            transition: background 0.3s ease;
         }
         .card h2 {
             margin-bottom: 20px;
-            color: #333;
+            color: var(--text-primary);
         }
         .btn {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -109,6 +156,9 @@
         }
         .btn-secondary {
             background: #e2e8f0;
+            color: #1a202c;
+        }
+        body.light-mode .btn-secondary {
             color: #333;
         }
         .btn-danger {
@@ -129,12 +179,15 @@
             background: rgba(0,0,0,0.5);
         }
         .modal-content {
-            background: white;
+            background: var(--modal-bg);
             margin: 50px auto;
             padding: 30px;
             border-radius: 12px;
             max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
             position: relative;
+            transition: background 0.3s ease;
         }
         .close {
             position: absolute;
@@ -143,10 +196,10 @@
             font-size: 28px;
             font-weight: bold;
             cursor: pointer;
-            color: #999;
+            color: var(--text-muted);
         }
         .close:hover {
-            color: #333;
+            color: var(--text-primary);
         }
         .form-group {
             margin-bottom: 20px;
@@ -155,14 +208,17 @@
             display: block;
             margin-bottom: 5px;
             font-weight: 500;
-            color: #555;
+            color: var(--text-secondary);
         }
         .form-group input, .form-group select, .form-group textarea {
             width: 100%;
             padding: 10px;
-            border: 2px solid #ddd;
+            border: 2px solid var(--input-border);
             border-radius: 6px;
             font-size: 16px;
+            background: var(--input-bg);
+            color: var(--text-primary);
+            transition: background 0.3s ease, border 0.3s ease;
         }
         .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
             outline: none;
@@ -173,13 +229,14 @@
             gap: 15px;
         }
         .subscription-item {
-            background: #f8f9fa;
+            background: var(--subscription-item-bg);
             padding: 20px;
             border-radius: 10px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             border-left: 4px solid #667eea;
+            transition: background 0.3s ease;
         }
         .subscription-item.streaming {
             border-left-color: #e53e3e;
@@ -197,17 +254,17 @@
             border-left-color: #a0aec0;
         }
         .subscription-info h3 {
-            color: #333;
+            color: var(--text-primary);
             margin-bottom: 5px;
         }
         .subscription-info p {
-            color: #666;
+            color: var(--text-secondary);
             font-size: 14px;
         }
         .subscription-cost {
             font-size: 1.5rem;
             font-weight: bold;
-            color: #333;
+            color: var(--text-primary);
         }
         .subscription-actions {
             display: flex;
@@ -253,12 +310,14 @@
             justify-content: space-between;
             margin-bottom: 5px;
             font-size: 14px;
+            color: var(--text-secondary);
         }
         .category-bar {
             height: 8px;
-            background: #e2e8f0;
+            background: var(--border-color);
             border-radius: 4px;
             overflow: hidden;
+            transition: background 0.3s ease;
         }
         .category-fill {
             height: 100%;
@@ -268,12 +327,304 @@
         .empty-state {
             text-align: center;
             padding: 60px 20px;
-            color: #999;
+            color: var(--empty-state-text);
+        }
+        .muted-text {
+            color: var(--text-muted);
+        }
+        .secondary-text {
+            color: var(--text-secondary);
         }
         .empty-state img {
             width: 200px;
             opacity: 0.5;
             margin-bottom: 20px;
+        }
+        /* AI Features Styling */
+        .chat-container {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            background: var(--bg-tertiary);
+            transition: background 0.3s ease, border 0.3s ease;
+        }
+        .chat-message {
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border-radius: 8px;
+            max-width: 80%;
+        }
+        .chat-message.user {
+            background: var(--chat-user-bg);
+            margin-left: auto;
+            text-align: right;
+            border: 1px solid var(--chat-user-border);
+            color: var(--text-primary);
+        }
+        .chat-message.ai {
+            background: var(--chat-ai-bg);
+            border: 1px solid var(--chat-ai-border);
+            color: var(--text-primary);
+        }
+        .chat-input-container {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+        .chat-input-container textarea {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid var(--input-border);
+            border-radius: 8px;
+            resize: vertical;
+            min-height: 60px;
+            max-height: 120px;
+            font-family: inherit;
+            background: var(--input-bg);
+            color: var(--text-primary);
+            transition: background 0.3s ease, border 0.3s ease;
+        }
+        .chat-input-container textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .ai-insight {
+            background: var(--bg-tertiary);
+            padding: 15px;
+            border-left: 4px solid #667eea;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            transition: background 0.3s ease;
+        }
+        .ai-insight h4 {
+            color: #667eea;
+            margin-bottom: 8px;
+        }
+        .ai-insight p {
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+        .ai-recommendation {
+            background: var(--bg-tertiary);
+            padding: 15px;
+            border-left: 4px solid #ed8936;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            transition: background 0.3s ease;
+        }
+        .ai-recommendation h4 {
+            color: #ed8936;
+            margin-bottom: 8px;
+        }
+        .ai-recommendation p {
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+        .ai-recommendation .savings {
+            color: #38a169;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+        .ai-recommendation .priority {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+        .ai-recommendation .priority.high {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+        .ai-recommendation .priority.medium {
+            background: #feebc8;
+            color: #7c2d12;
+        }
+        .ai-recommendation .priority.low {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        .alternative-item {
+            background: #f0fff4;
+            padding: 15px;
+            border-left: 4px solid #48bb78;
+            border-radius: 6px;
+            margin-bottom: 10px;
+        }
+        .alternative-item h4 {
+            color: #22543d;
+            margin-bottom: 8px;
+        }
+        .alternative-item p {
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+            line-height: 1.5;
+        }
+        .alternative-item .price {
+            color: #38a169;
+            font-weight: 600;
+            font-size: 1.1em;
+        }
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(102, 126, 234, 0.3);
+            border-radius: 50%;
+            border-top-color: #667eea;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        /* Floating Chat Widget */
+        .chat-widget-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        .chat-widget-button {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .chat-widget-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+        }
+        .chat-widget-window {
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            width: 380px;
+            height: 500px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            z-index: 1000;
+            transition: background 0.3s ease;
+        }
+        .chat-widget-window.open {
+            display: flex;
+        }
+        .chat-widget-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: move;
+        }
+        .chat-widget-header h3 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .chat-widget-close {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s;
+        }
+        .chat-widget-close:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        .chat-widget-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            background: var(--bg-tertiary);
+            transition: background 0.3s ease;
+        }
+        .chat-widget-input {
+            padding: 15px;
+            border-top: 1px solid var(--border-color);
+            background: var(--card-bg);
+            display: flex;
+            gap: 10px;
+            transition: background 0.3s ease, border 0.3s ease;
+        }
+        .chat-widget-input textarea {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid var(--input-border);
+            border-radius: 8px;
+            resize: none;
+            font-family: inherit;
+            font-size: 14px;
+            background: var(--input-bg);
+            color: var(--text-primary);
+            transition: background 0.3s ease, border 0.3s ease;
+        }
+        .chat-widget-input textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .chat-widget-input button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+        .chat-widget-input button:hover {
+            transform: translateY(-2px);
+        }
+        @media (max-width: 480px) {
+            .chat-widget-window {
+                width: calc(100vw - 40px);
+                right: 20px;
+                left: 20px;
+            }
+        }
+        /* Theme Toggle Button */
+        .theme-toggle {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s, transform 0.2s;
+        }
+        .theme-toggle:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.05);
         }
     </style>
 </head>
@@ -283,6 +634,9 @@
         <div class="navbar-right">
             <span id="username"></span>
             <a href="/admin" id="adminLink" style="display:none;">⚙️ Admin</a>
+            <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+                <span id="themeIcon">☀️</span>
+            </button>
             <a href="/logout">Logout</a>
         </div>
     </div>
@@ -322,6 +676,50 @@
         <div class="card">
             <h2>Spending by Category</h2>
             <div id="categoryChart" class="category-chart"></div>
+        </div>
+
+        <!-- AI Analysis Section -->
+        <div id="aiAnalysisSection" class="card" style="display: none;">
+            <h2>📊 AI Spending Analysis</h2>
+            <div id="analysisContent">
+                <div class="loading-spinner"></div> <span class="muted-text">Loading analysis...</span>
+            </div>
+            <button class="btn btn-secondary" onclick="refreshAnalysis()" style="margin-top: 15px;">🔄 Refresh Analysis</button>
+        </div>
+
+        <!-- AI Recommendations Section -->
+        <div id="aiRecommendationsSection" class="card" style="display: none;">
+            <h2>💡 Personalized Recommendations</h2>
+            <div id="recommendationsContent">
+                <div class="loading-spinner"></div> <span class="muted-text">Loading recommendations...</span>
+            </div>
+            <button class="btn btn-secondary" onclick="refreshRecommendations()" style="margin-top: 15px;">🔄 Get New Recommendations</button>
+        </div>
+
+    </div>
+
+    <!-- Floating AI Chat Widget -->
+    <div id="chatWidgetContainer" class="chat-widget-container" style="display: none;">
+        <!-- Minimized Chat Button -->
+        <button id="chatWidgetButton" class="chat-widget-button" onclick="toggleChatWidget()">
+            💬
+        </button>
+
+        <!-- Chat Window -->
+        <div id="chatWidgetWindow" class="chat-widget-window">
+            <div class="chat-widget-header">
+                <h3>💬 AI Assistant</h3>
+                <button class="chat-widget-close" onclick="toggleChatWidget()">−</button>
+            </div>
+            <div id="chatWidgetBody" class="chat-widget-body">
+                <div class="chat-message ai">
+                    <p>Hello! I'm your AI subscription assistant. Ask me anything about your subscriptions, and I'll help you optimize your spending!</p>
+                </div>
+            </div>
+            <div class="chat-widget-input">
+                <textarea id="chatWidgetInput" placeholder="Ask about your subscriptions..." rows="2"></textarea>
+                <button onclick="sendChatMessage()">Send</button>
+            </div>
         </div>
     </div>
 
@@ -454,6 +852,8 @@
                         <div style="display: flex; align-items: center; gap: 20px;">
                             <div class="subscription-cost">$${sub.cost}</div>
                             <div class="subscription-actions">
+                                ${aiSettings && aiSettings.ai_enabled && aiSettings.feature_alternatives ?
+                                    `<button class="btn btn-small" onclick="findAlternatives(${sub.id})" style="background: #48bb78;">🔍 Find Alternatives</button>` : ''}
                                 <button class="btn btn-small btn-secondary" onclick="editSubscription(${sub.id})">Edit</button>
                                 <button class="btn btn-small btn-danger" onclick="deleteSubscription(${sub.id})">Delete</button>
                             </div>
@@ -471,7 +871,7 @@
             const container = document.getElementById('categoryChart');
             
             if (!categories || categories.length === 0) {
-                container.innerHTML = '<p style="color: #999;">No data yet</p>';
+                container.innerHTML = '<p class="muted-text">No data yet</p>';
                 return;
             }
             
@@ -592,9 +992,304 @@
             }
         }
 
+        // ============ AI FEATURES ============
+
+        // Global state for AI features
+        let aiSettings = null;
+        let chatHistory = [];
+
+        // Load AI settings and show/hide features
+        async function loadAISettings() {
+            try {
+                const response = await fetch('/api/ai/settings');
+                if (response.ok) {
+                    aiSettings = await response.json();
+                    updateAIFeatureVisibility();
+                }
+            } catch (error) {
+                console.error('Error loading AI settings:', error);
+            }
+        }
+
+        // Show/hide AI features based on settings
+        function updateAIFeatureVisibility() {
+            if (!aiSettings || !aiSettings.ai_enabled) {
+                return; // Hide all AI features
+            }
+
+            if (aiSettings.feature_chat) {
+                document.getElementById('chatWidgetContainer').style.display = 'block';
+            }
+
+            if (aiSettings.feature_analysis) {
+                document.getElementById('aiAnalysisSection').style.display = 'block';
+                loadAIAnalysis();
+            }
+
+            if (aiSettings.feature_recommendations) {
+                document.getElementById('aiRecommendationsSection').style.display = 'block';
+                loadAIRecommendations();
+            }
+
+            // Reload subscriptions to show "Find Alternatives" buttons
+            loadSubscriptions();
+        }
+
+        // Toggle chat widget open/closed
+        function toggleChatWidget() {
+            const chatWindow = document.getElementById('chatWidgetWindow');
+            chatWindow.classList.toggle('open');
+        }
+
+        // Find alternatives for a subscription
+        async function findAlternatives(subId) {
+            const button = event.target;
+            const originalText = button.innerHTML;
+            button.disabled = true;
+            button.innerHTML = '<span class="loading-spinner"></span> <span class="muted-text">Finding...</span>';
+
+            try {
+                const response = await fetch(`/api/ai/alternatives/${subId}`);
+                const data = await response.json();
+
+                if (response.ok && data.alternatives) {
+                    showAlternativesModal(data.alternatives);
+                } else {
+                    alert(data.error || 'Error finding alternatives');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error finding alternatives');
+            } finally {
+                button.disabled = false;
+                button.innerHTML = originalText;
+            }
+        }
+
+        // Show alternatives in modal
+        function showAlternativesModal(alternatives) {
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.style.display = 'block';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
+                    <h2>💡 Alternative Suggestions</h2>
+                    <div id="alternativesList">
+                        ${alternatives.map(alt => `
+                            <div class="alternative-item">
+                                <h4>${alt.name}</h4>
+                                <p>${alt.description}</p>
+                                <p class="price">💰 ${alt.price}</p>
+                                ${alt.differences ? `<p class="secondary-text" style="font-size: 14px;">📋 ${alt.differences}</p>` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        // Load AI analysis
+        async function loadAIAnalysis() {
+            const container = document.getElementById('analysisContent');
+            container.innerHTML = '<div class="loading-spinner"></div> <span class="muted-text">Analyzing your spending...</span>';
+
+            try {
+                const response = await fetch('/api/ai/analysis');
+                const data = await response.json();
+
+                if (response.ok && data.insights) {
+                    renderAnalysis(data);
+                } else {
+                    container.innerHTML = `<p class="muted-text">${data.error || 'Analysis unavailable'}</p>`;
+                }
+            } catch (error) {
+                container.innerHTML = '<p class="muted-text">Error loading analysis</p>';
+            }
+        }
+
+        // Render analysis
+        function renderAnalysis(data) {
+            const container = document.getElementById('analysisContent');
+            if (!data.insights || data.insights.length === 0) {
+                container.innerHTML = '<p class="muted-text">No insights available yet</p>';
+                return;
+            }
+            container.innerHTML = data.insights.map(insight => `
+                <div class="ai-insight">
+                    <h4>${insight.title}</h4>
+                    <p>${insight.description}</p>
+                </div>
+            `).join('');
+        }
+
+        // Load AI recommendations
+        async function loadAIRecommendations() {
+            const container = document.getElementById('recommendationsContent');
+            container.innerHTML = '<div class="loading-spinner"></div> <span class="muted-text">Generating recommendations...</span>';
+
+            try {
+                const response = await fetch('/api/ai/recommendations');
+                const data = await response.json();
+
+                if (response.ok && data.recommendations) {
+                    renderRecommendations(data);
+                } else {
+                    container.innerHTML = `<p class="muted-text">${data.error || 'Recommendations unavailable'}</p>`;
+                }
+            } catch (error) {
+                container.innerHTML = '<p class="muted-text">Error loading recommendations</p>';
+            }
+        }
+
+        // Render recommendations
+        function renderRecommendations(data) {
+            const container = document.getElementById('recommendationsContent');
+            if (!data.recommendations || data.recommendations.length === 0) {
+                container.innerHTML = '<p class="muted-text">No recommendations available yet</p>';
+                return;
+            }
+            container.innerHTML = data.recommendations.map(rec => `
+                <div class="ai-recommendation">
+                    <h4>${rec.title}</h4>
+                    <p>${rec.description}</p>
+                    ${rec.savings ? `<p class="savings">💰 Potential Savings: ${rec.savings}</p>` : ''}
+                    ${rec.priority ? `<span class="priority ${rec.priority}">${rec.priority.toUpperCase()}</span>` : ''}
+                </div>
+            `).join('');
+        }
+
+        // Send chat message
+        async function sendChatMessage() {
+            const input = document.getElementById('chatWidgetInput');
+            const message = input.value.trim();
+
+            if (!message) return;
+
+            // Open chat widget if not already open
+            const chatWindow = document.getElementById('chatWidgetWindow');
+            if (!chatWindow.classList.contains('open')) {
+                chatWindow.classList.add('open');
+            }
+
+            // Add user message to chat
+            appendChatMessage(message, 'user');
+            input.value = '';
+
+            // Show loading
+            appendChatMessage('<div class="loading-spinner"></div> <span class="muted-text">Thinking...</span>', 'ai', true);
+
+            try {
+                const response = await fetch('/api/ai/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        history: chatHistory.slice(-10) // Last 10 messages
+                    })
+                });
+
+                const data = await response.json();
+
+                // Remove loading message
+                removeLastChatMessage();
+
+                if (response.ok && data.response) {
+                    appendChatMessage(data.response, 'ai');
+                    chatHistory.push({ role: 'user', content: message });
+                    chatHistory.push({ role: 'assistant', content: data.response });
+                } else {
+                    appendChatMessage('Sorry, I encountered an error. Please try again.', 'ai');
+                }
+            } catch (error) {
+                removeLastChatMessage();
+                appendChatMessage('Sorry, I encountered an error. Please try again.', 'ai');
+            }
+        }
+
+        // Append message to chat
+        function appendChatMessage(message, role, isTemp = false) {
+            const container = document.getElementById('chatWidgetBody');
+            const div = document.createElement('div');
+            div.className = `chat-message ${role}`;
+            if (isTemp) div.id = 'tempMessage';
+            div.innerHTML = `<p>${message}</p>`;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // Remove last chat message
+        function removeLastChatMessage() {
+            const temp = document.getElementById('tempMessage');
+            if (temp) temp.remove();
+        }
+
+        // Refresh functions
+        function refreshAnalysis() {
+            loadAIAnalysis();
+        }
+
+        function refreshRecommendations() {
+            loadAIRecommendations();
+        }
+
+        // Theme Toggle Function
+        function toggleTheme() {
+            const body = document.body;
+            const themeIcon = document.getElementById('themeIcon');
+
+            if (body.classList.contains('light-mode')) {
+                // Switch to dark mode
+                body.classList.remove('light-mode');
+                themeIcon.textContent = '☀️';
+                localStorage.setItem('theme', 'dark');
+            } else {
+                // Switch to light mode
+                body.classList.add('light-mode');
+                themeIcon.textContent = '🌙';
+                localStorage.setItem('theme', 'light');
+            }
+        }
+
+        // Initialize theme on page load
+        function initializeTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            const body = document.body;
+            const themeIcon = document.getElementById('themeIcon');
+
+            // Default is dark mode, only apply light mode if explicitly saved
+            if (savedTheme === 'light') {
+                body.classList.add('light-mode');
+                themeIcon.textContent = '🌙';
+            } else {
+                // Dark mode is default (no class needed)
+                themeIcon.textContent = '☀️';
+            }
+        }
+
+        // Allow Enter key to send chat message (Shift+Enter for new line)
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize theme
+            initializeTheme();
+
+            const chatInput = document.getElementById('chatWidgetInput');
+            if (chatInput) {
+                chatInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendChatMessage();
+                    }
+                });
+            }
+        });
+
         // Load data on page load
         loadDashboard();
         loadSubscriptions();
+        loadAISettings();
     </script>
 </body>
 </html>

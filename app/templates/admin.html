@@ -5,6 +5,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel - Subscription Tracker</title>
     <style>
+        :root {
+            /* Dark mode colors (default) */
+            --bg-primary: #1a202c;
+            --bg-secondary: #2d3748;
+            --bg-tertiary: #4a5568;
+            --text-primary: #e2e8f0;
+            --text-secondary: #cbd5e0;
+            --text-muted: #a0aec0;
+            --border-color: #4a5568;
+            --card-bg: #2d3748;
+            --input-bg: #1a202c;
+            --input-border: #4a5568;
+        }
+
+        body.light-mode {
+            /* Light mode colors */
+            --bg-primary: #f5f7fa;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #ebf8ff;
+            --text-primary: #333333;
+            --text-secondary: #555555;
+            --text-muted: #666666;
+            --border-color: #ddd;
+            --card-bg: #ffffff;
+            --input-bg: #ffffff;
+            --input-border: #ddd;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -12,8 +40,9 @@
         }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f5f7fa;
+            background: var(--bg-primary);
             min-height: 100vh;
+            transition: background 0.3s ease;
         }
         .navbar {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -45,15 +74,16 @@
             padding: 2rem;
         }
         .card {
-            background: white;
+            background: var(--card-bg);
             border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
             padding: 30px;
             margin-bottom: 20px;
+            transition: background 0.3s ease;
         }
         .card h2 {
             margin-bottom: 20px;
-            color: #333;
+            color: var(--text-primary);
         }
         .form-group {
             margin-bottom: 25px;
@@ -62,14 +92,17 @@
             display: block;
             margin-bottom: 8px;
             font-weight: 600;
-            color: #555;
+            color: var(--text-secondary);
         }
         .form-group input, .form-group select {
             width: 100%;
             padding: 12px;
-            border: 2px solid #ddd;
+            border: 2px solid var(--input-border);
             border-radius: 8px;
             font-size: 16px;
+            background: var(--input-bg);
+            color: var(--text-primary);
+            transition: background 0.3s ease, border 0.3s ease;
         }
         .form-group input:focus, .form-group select:focus {
             outline: none;
@@ -81,6 +114,9 @@
             gap: 10px;
             padding: 10px 0;
         }
+        .checkbox-group span {
+            color: var(--text-secondary);
+        }
         .checkbox-group input[type="checkbox"] {
             width: 20px;
             height: 20px;
@@ -90,6 +126,7 @@
             margin: 0;
             cursor: pointer;
             font-weight: normal;
+            color: var(--text-secondary);
         }
         .btn {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -107,7 +144,22 @@
         }
         .btn-secondary {
             background: #e2e8f0;
+            color: #1a202c;
+        }
+        body.light-mode .btn-secondary {
             color: #333;
+        }
+        .muted-text {
+            color: var(--text-muted);
+        }
+        .card p {
+            color: var(--text-secondary);
+        }
+        .card strong {
+            color: var(--text-primary);
+        }
+        .card span {
+            color: var(--text-primary);
         }
         .alert {
             padding: 15px;
@@ -126,25 +178,33 @@
             border-left: 4px solid #e53e3e;
         }
         .info-box {
-            background: #ebf8ff;
+            background: var(--bg-tertiary);
             border-left: 4px solid #3182ce;
             padding: 15px;
             border-radius: 6px;
             margin-bottom: 20px;
+            transition: background 0.3s ease;
+        }
+        .info-box strong {
+            color: var(--text-primary);
         }
         .info-box p {
-            color: #2c5282;
+            color: var(--text-secondary);
             margin: 5px 0;
         }
         .provider-section {
-            border: 2px solid #e2e8f0;
+            border: 2px solid var(--border-color);
             padding: 20px;
             border-radius: 8px;
             margin-bottom: 20px;
+            transition: border 0.3s ease, background 0.3s ease;
         }
         .provider-section.active {
             border-color: #667eea;
-            background: #f7fafc;
+            background: var(--bg-tertiary);
+        }
+        .provider-section h3 {
+            color: var(--text-primary);
         }
         .toggle-switch {
             position: relative;
@@ -185,12 +245,39 @@
         input:checked + .slider:before {
             transform: translateX(26px);
         }
+        /* Theme Toggle Button */
+        .theme-toggle {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s, transform 0.2s;
+        }
+        .theme-toggle:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.05);
+        }
+        .navbar-right {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
     </style>
 </head>
 <body>
     <div class="navbar">
         <h1>⚙️ Admin Panel</h1>
-        <div>
+        <div class="navbar-right">
+            <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+                <span id="themeIcon">☀️</span>
+            </button>
             <a href="/">← Back to Dashboard</a>
         </div>
     </div>
@@ -239,7 +326,7 @@
                         <div class="form-group">
                             <label for="api_key">Anthropic API Key</label>
                             <input type="password" id="api_key" placeholder="sk-ant-...">
-                            <small style="color: #666;">Get your API key from: <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a></small>
+                            <small class="muted-text">Get your API key from: <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a></small>
                         </div>
                     </div>
 
@@ -249,7 +336,7 @@
                         <div class="form-group">
                             <label for="api_key">OpenAI API Key</label>
                             <input type="password" id="api_key_openai" placeholder="sk-...">
-                            <small style="color: #666;">Get your API key from: <a href="https://platform.openai.com" target="_blank">platform.openai.com</a></small>
+                            <small class="muted-text">Get your API key from: <a href="https://platform.openai.com" target="_blank">platform.openai.com</a></small>
                         </div>
                     </div>
 
@@ -259,7 +346,19 @@
                         <div class="form-group">
                             <label for="ollama_url">Ollama Server URL</label>
                             <input type="text" id="ollama_url" placeholder="http://localhost:11434">
-                            <small style="color: #666;">Self-hosted Ollama server address</small>
+                            <small class="muted-text">Self-hosted Ollama server address</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="ollama_model">Model</label>
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <select id="ollama_model" style="flex: 1;">
+                                    <option value="llama3.2">llama3.2 (default)</option>
+                                </select>
+                                <button type="button" class="btn btn-secondary" onclick="fetchOllamaModels()" style="white-space: nowrap;">
+                                    🔄 Fetch Models
+                                </button>
+                            </div>
+                            <small class="muted-text">Select from available models on your Ollama server</small>
                         </div>
                     </div>
 
@@ -312,18 +411,32 @@
             try {
                 const response = await fetch('/api/admin/settings');
                 const settings = await response.json();
-                
+
                 document.getElementById('ai_enabled').checked = settings.ai_enabled;
                 document.getElementById('ai_provider').value = settings.ai_provider;
                 document.getElementById('feature_alternatives').checked = settings.feature_alternatives;
                 document.getElementById('feature_chat').checked = settings.feature_chat;
                 document.getElementById('feature_analysis').checked = settings.feature_analysis;
                 document.getElementById('feature_recommendations').checked = settings.feature_recommendations;
-                
+
+                // Load Ollama model if available
+                if (settings.ollama_model) {
+                    const modelSelect = document.getElementById('ollama_model');
+                    // Check if option exists, if not add it
+                    const optionExists = Array.from(modelSelect.options).some(opt => opt.value === settings.ollama_model);
+                    if (!optionExists) {
+                        const option = document.createElement('option');
+                        option.value = settings.ollama_model;
+                        option.textContent = settings.ollama_model;
+                        modelSelect.appendChild(option);
+                    }
+                    modelSelect.value = settings.ollama_model;
+                }
+
                 updateProviderSections();
                 toggleAISection();
                 updateStatus(settings);
-                
+
             } catch (error) {
                 console.error('Error loading settings:', error);
             }
@@ -376,10 +489,10 @@
         // Save settings
         document.getElementById('settingsForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             const provider = document.getElementById('ai_provider').value;
             let apiKey = null;
-            
+
             if (provider === 'claude') {
                 apiKey = document.getElementById('api_key').value;
             } else if (provider === 'openai') {
@@ -387,17 +500,18 @@
             } else if (provider === 'ollama') {
                 apiKey = document.getElementById('ollama_url').value;
             }
-            
+
             const data = {
                 ai_enabled: document.getElementById('ai_enabled').checked,
                 ai_provider: provider,
                 api_key: apiKey,
+                ollama_model: document.getElementById('ollama_model').value,
                 feature_alternatives: document.getElementById('feature_alternatives').checked,
                 feature_chat: document.getElementById('feature_chat').checked,
                 feature_analysis: document.getElementById('feature_analysis').checked,
                 feature_recommendations: document.getElementById('feature_recommendations').checked
             };
-            
+
             try {
                 const response = await fetch('/api/admin/settings', {
                     method: 'PUT',
@@ -406,9 +520,9 @@
                     },
                     body: JSON.stringify(data)
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (response.ok) {
                     showAlert('Settings saved successfully!', 'success');
                     loadSettings();
@@ -421,16 +535,129 @@
             }
         });
 
+        // Fetch available Ollama models
+        async function fetchOllamaModels() {
+            const serverUrl = document.getElementById('ollama_url').value;
+
+            if (!serverUrl) {
+                showAlert('Please enter Ollama server URL first', 'error');
+                return;
+            }
+
+            const button = event.target;
+            const originalText = button.innerHTML;
+            button.disabled = true;
+            button.innerHTML = '⏳ Fetching...';
+
+            try {
+                const response = await fetch('/api/ai/ollama/models', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        server_url: serverUrl
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.models) {
+                    const modelSelect = document.getElementById('ollama_model');
+                    const currentValue = modelSelect.value;
+
+                    // Clear existing options
+                    modelSelect.innerHTML = '';
+
+                    // Add fetched models
+                    result.models.forEach(model => {
+                        const option = document.createElement('option');
+                        option.value = model;
+                        option.textContent = model;
+                        modelSelect.appendChild(option);
+                    });
+
+                    // Try to restore previous selection
+                    if (Array.from(modelSelect.options).some(opt => opt.value === currentValue)) {
+                        modelSelect.value = currentValue;
+                    }
+
+                    showAlert(`✅ Found ${result.models.length} model(s)`, 'success');
+                } else {
+                    showAlert(`❌ ${result.error || 'Failed to fetch models'}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('❌ Failed to fetch models', 'error');
+            } finally {
+                button.disabled = false;
+                button.innerHTML = originalText;
+            }
+        }
+
         // Test connection
         async function testConnection() {
             const provider = document.getElementById('ai_provider').value;
-            
+
             if (provider === 'none') {
                 showAlert('Please select an AI provider first', 'error');
                 return;
             }
-            
-            showAlert('Testing connection... (This feature will be implemented)', 'success');
+
+            // Get API key based on provider
+            let apiKey = null;
+            if (provider === 'claude') {
+                apiKey = document.getElementById('api_key').value;
+            } else if (provider === 'openai') {
+                apiKey = document.getElementById('api_key_openai').value;
+            } else if (provider === 'ollama') {
+                apiKey = document.getElementById('ollama_url').value;
+            }
+
+            if (!apiKey) {
+                showAlert('Please enter API credentials first', 'error');
+                return;
+            }
+
+            // Show loading state
+            const button = event.target;
+            const originalText = button.innerHTML;
+            button.disabled = true;
+            button.innerHTML = '⏳ Testing connection...';
+
+            try {
+                const requestBody = {
+                    provider: provider,
+                    api_key: apiKey
+                };
+
+                // Add ollama_model if Ollama is selected
+                if (provider === 'ollama') {
+                    requestBody.ollama_model = document.getElementById('ollama_model').value;
+                }
+
+                const response = await fetch('/api/ai/test-connection', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    showAlert(`✅ Successfully connected to ${result.provider}!`, 'success');
+                } else {
+                    showAlert(`❌ Connection failed: ${result.message}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('❌ Connection test failed', 'error');
+            } finally {
+                button.disabled = false;
+                button.innerHTML = originalText;
+            }
         }
 
         // Show alert
@@ -439,11 +666,48 @@
             alertDiv.textContent = message;
             alertDiv.className = `alert ${type}`;
             alertDiv.style.display = 'block';
-            
+
             setTimeout(() => {
                 alertDiv.style.display = 'none';
             }, 5000);
         }
+
+        // Theme Toggle Function
+        function toggleTheme() {
+            const body = document.body;
+            const themeIcon = document.getElementById('themeIcon');
+
+            if (body.classList.contains('light-mode')) {
+                // Switch to dark mode
+                body.classList.remove('light-mode');
+                themeIcon.textContent = '☀️';
+                localStorage.setItem('theme', 'dark');
+            } else {
+                // Switch to light mode
+                body.classList.add('light-mode');
+                themeIcon.textContent = '🌙';
+                localStorage.setItem('theme', 'light');
+            }
+        }
+
+        // Initialize theme on page load
+        function initializeTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            const body = document.body;
+            const themeIcon = document.getElementById('themeIcon');
+
+            // Default is dark mode, only apply light mode if explicitly saved
+            if (savedTheme === 'light') {
+                body.classList.add('light-mode');
+                themeIcon.textContent = '🌙';
+            } else {
+                // Dark mode is default (no class needed)
+                themeIcon.textContent = '☀️';
+            }
+        }
+
+        // Initialize theme
+        initializeTheme();
 
         // Load settings on page load
         loadSettings();

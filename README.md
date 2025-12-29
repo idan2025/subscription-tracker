@@ -4,21 +4,35 @@ A self-hosted web application for managing and tracking recurring subscriptions.
 
 ## Features
 
+### Core Features
 - User authentication and account management
 - Dashboard with monthly and yearly cost summaries
 - Subscription CRUD operations (Create, Read, Update, Delete)
 - Automated renewal alerts (7-day advance notice)
 - Category-based spending analytics
 - Multi-user support with admin roles
-- Alternative notes field for tracking cheaper options
 - Admin panel for system configuration
+- Dark mode with light mode option (theme persists across sessions)
+
+### AI-Powered Features (Optional)
+- **Smart Alternatives Finder**: AI searches for cheaper subscription alternatives
+- **AI Chat Assistant**: Conversational interface for subscription queries and optimization
+- **Spending Analysis**: AI-powered insights on spending patterns and trends
+- **Personalized Recommendations**: Tailored suggestions for cost reduction and optimization
+- **Multi-Provider Support**:
+  - Anthropic Claude (API)
+  - OpenAI GPT (API)
+  - Ollama (Self-hosted, local AI)
+- **Privacy-First**: AI features can be completely disabled; app works fully offline without AI
 
 ## Technology Stack
 
 - **Backend**: Python 3.11, Flask
 - **Database**: MySQL 8.0
-- **Frontend**: HTML5, CSS3, JavaScript
+- **Frontend**: HTML5, CSS3, JavaScript (Vanilla)
+- **AI Integration**: Anthropic SDK, OpenAI SDK, Ollama API
 - **Deployment**: Docker, Kubernetes, Helm
+- **UI/UX**: Dark mode by default, responsive design
 
 ## Installation
 
@@ -148,9 +162,33 @@ CREATE DATABASE subscription_tracker;
 
 Admin users can:
 - Access the admin panel
-- View system-wide settings
+- Configure AI features and providers
+- Enable/disable individual AI features
+- Test AI provider connections
 - Manage application configuration
 - Promote users to admin status (via database)
+
+### AI Configuration
+
+To enable AI features:
+
+1. Log in as an admin user
+2. Navigate to the Admin Panel
+3. Enable AI Features toggle
+4. Select your AI provider:
+   - **Claude (Anthropic)**: Requires API key from [console.anthropic.com](https://console.anthropic.com)
+   - **OpenAI**: Requires API key from [platform.openai.com](https://platform.openai.com)
+   - **Ollama**: Self-hosted option, requires local Ollama server
+5. Enter your API credentials
+6. Test the connection
+7. Enable desired features:
+   - Smart Alternatives Finder
+   - AI Chat Assistant
+   - Spending Analysis
+   - Personalized Recommendations
+8. Save settings
+
+**Privacy Note**: When AI is disabled, the application functions as a standard subscription tracker with no external API calls.
 
 ## Deployment Options
 
@@ -188,6 +226,15 @@ Parameterized deployment with:
 - Store sensitive credentials in secrets management systems
 - Use environment variables or Kubernetes secrets for database credentials
 - Enable MySQL SSL/TLS connections in production
+
+### AI Security
+
+- **API Key Storage**: AI provider API keys are encrypted before storage in the database
+- **Access Control**: Only admin users can configure AI settings
+- **Feature Isolation**: AI features can be individually enabled/disabled
+- **Privacy Mode**: Complete AI disable option for offline/air-gapped deployments
+- **Self-Hosted Option**: Ollama support allows fully local AI without external API calls
+- **No Data Sharing**: User subscription data never leaves your infrastructure (unless using cloud AI providers)
 
 ## Troubleshooting
 
@@ -231,6 +278,32 @@ kubectl logs -l app=flask-app -n subscription-tracker
 kubectl describe pod -l app=flask-app -n subscription-tracker
 ```
 
+### AI Features Issues
+
+**AI Features Not Appearing**
+- Verify AI is enabled in Admin Panel
+- Check that specific feature flags are enabled
+- Ensure API key is configured correctly
+- Test the AI connection using the "Test Connection" button
+
+**API Connection Failures**
+- **Claude/OpenAI**: Verify API key is valid and has credits
+- **Ollama**: Ensure Ollama server is running and accessible
+- Check application logs for detailed error messages
+- Verify network connectivity to API endpoints
+
+**Ollama-Specific Issues**
+```bash
+# Check Ollama server status
+curl http://localhost:11434/api/tags
+
+# Pull a model if needed
+ollama pull llama3.2
+
+# Check available models in admin panel
+# Use "Fetch Models" button to see all installed models
+```
+
 ## Development
 
 ### Project Structure
@@ -239,9 +312,16 @@ kubectl describe pod -l app=flask-app -n subscription-tracker
 subscription-tracker/
 ├── app/
 │   ├── app.py              # Main application
+│   ├── ai_providers.py     # AI provider abstraction layer
+│   ├── ai_services.py      # AI business logic
 │   ├── requirements.txt    # Python dependencies
 │   ├── Dockerfile          # Container image
 │   └── templates/          # HTML templates
+│       ├── dashboard.html  # Main dashboard with AI features
+│       ├── admin.html      # Admin panel with AI configuration
+│       ├── login.html      # Login page
+│       ├── register.html   # Registration page
+│       └── setup.html      # Initial setup wizard
 ├── k8s-manifests/
 │   ├── base/               # Base Kubernetes resources
 │   └── overlays/           # Environment-specific configs

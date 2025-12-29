@@ -5,6 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Subscription Tracker</title>
     <style>
+        :root {
+            /* Dark mode colors (default) */
+            --container-bg: #2d3748;
+            --text-primary: #e2e8f0;
+            --text-secondary: #cbd5e0;
+            --input-bg: #1a202c;
+            --input-border: #4a5568;
+        }
+
+        body.light-mode {
+            /* Light mode colors */
+            --container-bg: #ffffff;
+            --text-primary: #333333;
+            --text-secondary: #555555;
+            --input-bg: #ffffff;
+            --input-border: #ddd;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -17,18 +35,20 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            position: relative;
         }
         .container {
-            background: white;
+            background: var(--container-bg);
             border-radius: 15px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             padding: 40px;
             width: 100%;
             max-width: 400px;
+            transition: background 0.3s ease;
         }
         h1 {
             text-align: center;
-            color: #333;
+            color: var(--text-primary);
             margin-bottom: 30px;
         }
         .form-group {
@@ -37,16 +57,18 @@
         label {
             display: block;
             margin-bottom: 5px;
-            color: #555;
+            color: var(--text-secondary);
             font-weight: 500;
         }
         input {
             width: 100%;
             padding: 12px;
-            border: 2px solid #ddd;
+            border: 2px solid var(--input-border);
             border-radius: 8px;
             font-size: 16px;
-            transition: border-color 0.3s;
+            background: var(--input-bg);
+            color: var(--text-primary);
+            transition: border-color 0.3s, background 0.3s ease;
         }
         input:focus {
             outline: none;
@@ -95,9 +117,35 @@
         .link a:hover {
             text-decoration: underline;
         }
+        /* Theme Toggle Button */
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s, transform 0.2s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        .theme-toggle:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.05);
+        }
     </style>
 </head>
 <body>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <span id="themeIcon">☀️</span>
+    </button>
     <div class="container">
         <h1>🔐 Login</h1>
         <div id="message" class="message"></div>
@@ -156,6 +204,43 @@
                 messageDiv.style.display = 'block';
             }
         });
+
+        // Theme Toggle Function
+        function toggleTheme() {
+            const body = document.body;
+            const themeIcon = document.getElementById('themeIcon');
+
+            if (body.classList.contains('light-mode')) {
+                // Switch to dark mode
+                body.classList.remove('light-mode');
+                themeIcon.textContent = '☀️';
+                localStorage.setItem('theme', 'dark');
+            } else {
+                // Switch to light mode
+                body.classList.add('light-mode');
+                themeIcon.textContent = '🌙';
+                localStorage.setItem('theme', 'light');
+            }
+        }
+
+        // Initialize theme on page load
+        function initializeTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            const body = document.body;
+            const themeIcon = document.getElementById('themeIcon');
+
+            // Default is dark mode, only apply light mode if explicitly saved
+            if (savedTheme === 'light') {
+                body.classList.add('light-mode');
+                themeIcon.textContent = '🌙';
+            } else {
+                // Dark mode is default (no class needed)
+                themeIcon.textContent = '☀️';
+            }
+        }
+
+        // Initialize theme
+        initializeTheme();
     </script>
 </body>
 </html>
