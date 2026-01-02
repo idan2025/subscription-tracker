@@ -59,6 +59,55 @@ def get_ai_settings():
         return None
 
 
+def get_tool_settings():
+    """
+    Get tool calling configuration from database
+    Returns: dict with tool settings or None
+    """
+    connection = get_db_connection()
+    if not connection:
+        return None
+
+    try:
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute("""
+            SELECT internet_access_enabled, search_method,
+                   search_api_key, tool_calling_enabled
+            FROM admin_settings WHERE id = 1
+        """)
+        settings = cursor.fetchone()
+        cursor.close()
+        connection.close()
+        return settings
+    except Error as e:
+        print(f"Error fetching tool settings: {e}")
+        return None
+
+
+def should_use_tools(ai_settings):
+    """
+    Determine if tool calling should be used
+
+    Args:
+        ai_settings: Admin settings dict
+
+    Returns:
+        Boolean indicating if tools should be used
+    """
+    if not ai_settings:
+        return False
+
+    # Check if internet access is enabled
+    if not ai_settings.get('internet_access_enabled', False):
+        return False
+
+    # Check if tool calling is globally enabled (dev flag)
+    if not ai_settings.get('tool_calling_enabled', True):
+        return False
+
+    return True
+
+
 def get_user_subscriptions_context(user_id):
     """
     Get user's subscriptions and build context for AI
@@ -165,8 +214,47 @@ def find_alternatives(subscription_id, user_id):
             settings.get('ollama_model')
         )
 
-        # Build prompt
-        prompt = f"""You are a subscription cost optimization assistant.
+        # Check if we should use tools
+        use_tools = should_use_tools(settings)
+
+        if use_tools and provider.supports_tool_calling:
+            # Tool calling path
+            from web_tools import get_tool_definitions_for_provider, ToolExecutor
+
+            tools = get_tool_definitions_for_provider(settings['ai_provider'])
+            tool_executor = ToolExecutor(
+                search_method=settings.get('search_method', 'free_scraping'),
+                search_api_key=settings.get('search_api_key')
+            )
+
+            prompt = f"""The user has a subscription to: {subscription['name']}
+Current cost: ${subscription['cost']} per {subscription['billing_cycle']}
+Category: {subscription.get('category', 'Unknown')}
+
+Find 3-5 cheaper or better-value alternatives. Use the available tools to search for current pricing and real alternatives.
+
+After gathering information, respond with a JSON array in this format:
+[
+    {{
+        "name": "Alternative Service Name",
+        "description": "Brief description",
+        "price": "$X.XX/month",
+        "differences": "Key differences"
+    }}
+]"""
+
+            context = "You are a subscription cost optimization assistant with access to real-time web search. Use the tools to find current, accurate information about alternatives and pricing."
+
+            # Generate response with tools
+            response = provider.generate_response_with_tools(
+                prompt=prompt,
+                context=context,
+                tools=tools,
+                tool_executor=tool_executor
+            )
+        else:
+            # Fallback to prompt-based approach
+            prompt = f"""You are a subscription cost optimization assistant.
 
 The user has a subscription to: {subscription['name']}
 Current cost: ${subscription['cost']} per {subscription['billing_cycle']}
@@ -189,8 +277,7 @@ Format your response exactly like this:
     }}
 ]"""
 
-        # Generate response
-        response = provider.generate_response(prompt)
+            response = provider.generate_response(prompt)
 
         # Parse JSON response
         try:
@@ -268,8 +355,44 @@ def get_spending_analysis(user_id):
             settings.get('ollama_model')
         )
 
-        # Build prompt
-        prompt = f"""{context}
+        # Check if we should use tools
+        use_tools = should_use_tools(settings)
+
+        if use_tools and provider.supports_tool_calling:
+            # Tool calling path
+            from web_tools import get_tool_definitions_for_provider, ToolExecutor
+
+            tools = get_tool_definitions_for_provider(settings['ai_provider'])
+            tool_executor = ToolExecutor(
+                search_method=settings.get('search_method', 'free_scraping'),
+                search_api_key=settings.get('search_api_key')
+            )
+
+            prompt = f"""{context}
+
+Analyze this user's subscription spending and provide 3-5 key insights. Use tools to check if any services have had recent price increases.
+
+Respond with JSON:
+{{
+    "insights": [
+        {{
+            "title": "Brief insight title",
+            "description": "Detailed explanation"
+        }}
+    ]
+}}"""
+
+            system_context = "You are a subscription spending analyst with access to real-time price change information. Use tools when needed."
+
+            response = provider.generate_response_with_tools(
+                prompt=prompt,
+                context=system_context,
+                tools=tools,
+                tool_executor=tool_executor
+            )
+        else:
+            # Fallback to prompt-based approach
+            prompt = f"""{context}
 
 Analyze this user's subscription spending and provide 3-5 key insights about their spending patterns, potential areas for cost reduction, and any concerning trends.
 
@@ -284,8 +407,7 @@ Format your response exactly like this:
     ]
 }}"""
 
-        # Generate response
-        response = provider.generate_response(prompt)
+            response = provider.generate_response(prompt)
 
         # Parse JSON response
         try:
@@ -358,8 +480,46 @@ def get_recommendations(user_id):
             settings.get('ollama_model')
         )
 
-        # Build prompt
-        prompt = f"""{context}
+        # Check if we should use tools
+        use_tools = should_use_tools(settings)
+
+        if use_tools and provider.supports_tool_calling:
+            # Tool calling path
+            from web_tools import get_tool_definitions_for_provider, ToolExecutor
+
+            tools = get_tool_definitions_for_provider(settings['ai_provider'])
+            tool_executor = ToolExecutor(
+                search_method=settings.get('search_method', 'free_scraping'),
+                search_api_key=settings.get('search_api_key')
+            )
+
+            prompt = f"""{context}
+
+Provide 3-5 personalized recommendations to help reduce costs and optimize value. Use tools to find current deals or pricing.
+
+Respond with JSON:
+{{
+    "recommendations": [
+        {{
+            "title": "Recommendation title",
+            "description": "Detailed explanation",
+            "savings": "$10/month",
+            "priority": "high"
+        }}
+    ]
+}}"""
+
+            system_context = "You are a subscription optimization advisor with access to real-time pricing and deals. Use tools when helpful."
+
+            response = provider.generate_response_with_tools(
+                prompt=prompt,
+                context=system_context,
+                tools=tools,
+                tool_executor=tool_executor
+            )
+        else:
+            # Fallback to prompt-based approach
+            prompt = f"""{context}
 
 Based on this subscription portfolio, provide 3-5 personalized recommendations to help the user:
 1. Reduce costs
@@ -386,8 +546,7 @@ Format your response exactly like this:
     ]
 }}"""
 
-        # Generate response
-        response = provider.generate_response(prompt)
+            response = provider.generate_response(prompt)
 
         # Parse JSON response
         try:
@@ -455,8 +614,18 @@ def chat_with_ai(message, user_id, conversation_history=None):
             settings.get('ollama_model')
         )
 
+        # Check if we should use tools
+        use_tools = should_use_tools(settings)
+
         # Build system message with context
-        system_context = f"""You are a helpful subscription management assistant.
+        if use_tools and provider.supports_tool_calling:
+            system_context = f"""You are a helpful subscription management assistant with access to real-time web search.
+
+{context}
+
+You can use the available tools to search for current pricing, alternatives, and price changes. Answer the user's questions about their subscriptions, help them optimize costs, suggest alternatives, and provide insights. Be concise, friendly, and helpful."""
+        else:
+            system_context = f"""You are a helpful subscription management assistant.
 
 {context}
 
@@ -474,7 +643,23 @@ Answer the user's questions about their subscriptions, help them optimize costs,
             full_prompt = system_context + f"\n\nUser: {message}\nAssistant:"
 
         # Generate response
-        response = provider.generate_response(full_prompt)
+        if use_tools and provider.supports_tool_calling:
+            from web_tools import get_tool_definitions_for_provider, ToolExecutor
+
+            tools = get_tool_definitions_for_provider(settings['ai_provider'])
+            tool_executor = ToolExecutor(
+                search_method=settings.get('search_method', 'free_scraping'),
+                search_api_key=settings.get('search_api_key')
+            )
+
+            response = provider.generate_response_with_tools(
+                prompt=message,
+                context=system_context,
+                tools=tools,
+                tool_executor=tool_executor
+            )
+        else:
+            response = provider.generate_response(full_prompt)
 
         return {
             "response": response,

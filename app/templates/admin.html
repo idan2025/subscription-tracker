@@ -388,6 +388,42 @@
                     </div>
                 </div>
 
+                <!-- Internet Access Section -->
+                <div class="form-group" style="margin-top: 30px; border-top: 2px solid var(--border-color); padding-top: 20px;">
+                    <label>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong>🌐 Internet Access (Tool Calling)</strong>
+                                <p style="font-size: 14px; margin-top: 5px; color: var(--text-secondary); font-weight: normal;">
+                                    Enable AI to search the web for current pricing, alternatives, and reviews
+                                </p>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="internet_access_enabled">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </label>
+                </div>
+
+                <div id="internetAccessSection" style="display: none; margin-left: 20px;">
+                    <div class="form-group">
+                        <label for="search_method">Search Method</label>
+                        <select id="search_method">
+                            <option value="free_scraping">Free Web Scraping (No cost, uses DuckDuckGo)</option>
+                            <option value="serpapi">SerpAPI (Paid, requires API key)</option>
+                            <option value="google_custom">Google Custom Search (Paid, requires API key)</option>
+                        </select>
+                        <small style="color: var(--text-secondary);">Free scraping is recommended for most users</small>
+                    </div>
+
+                    <div id="searchApiKeySection" class="form-group" style="display: none;">
+                        <label for="search_api_key">Search API Key</label>
+                        <input type="password" id="search_api_key" placeholder="Enter API key for selected search method">
+                        <small id="searchApiKeyHelp" style="color: var(--text-secondary);">API key required for paid search methods</small>
+                    </div>
+                </div>
+
                 <div style="display: flex; gap: 10px; margin-top: 30px;">
                     <button type="submit" class="btn">💾 Save Settings</button>
                     <button type="button" class="btn btn-secondary" onclick="testConnection()">🔌 Test Connection</button>
@@ -419,6 +455,15 @@
                 document.getElementById('feature_analysis').checked = settings.feature_analysis;
                 document.getElementById('feature_recommendations').checked = settings.feature_recommendations;
 
+                // Load Internet Access settings
+                if (settings.internet_access_enabled !== undefined) {
+                    document.getElementById('internet_access_enabled').checked = settings.internet_access_enabled;
+                }
+                if (settings.search_method) {
+                    document.getElementById('search_method').value = settings.search_method;
+                }
+                // Don't populate search_api_key for security
+
                 // Load Ollama model if available
                 if (settings.ollama_model) {
                     const modelSelect = document.getElementById('ollama_model');
@@ -435,6 +480,8 @@
 
                 updateProviderSections();
                 toggleAISection();
+                toggleInternetAccessSection();
+                updateSearchMethodSection();
                 updateStatus(settings);
 
             } catch (error) {
@@ -482,9 +529,36 @@
             document.getElementById('statusFeatures').textContent = features.length > 0 ? features.join(', ') : 'None';
         }
 
+        // Toggle Internet Access section
+        function toggleInternetAccessSection() {
+            const enabled = document.getElementById('internet_access_enabled').checked;
+            document.getElementById('internetAccessSection').style.display = enabled ? 'block' : 'none';
+        }
+
+        // Update search method section
+        function updateSearchMethodSection() {
+            const method = document.getElementById('search_method').value;
+            const apiKeySection = document.getElementById('searchApiKeySection');
+            const helpText = document.getElementById('searchApiKeyHelp');
+
+            if (method === 'free_scraping') {
+                apiKeySection.style.display = 'none';
+            } else {
+                apiKeySection.style.display = 'block';
+
+                if (method === 'serpapi') {
+                    helpText.innerHTML = 'Get your API key from: <a href="https://serpapi.com" target="_blank">serpapi.com</a>';
+                } else if (method === 'google_custom') {
+                    helpText.innerHTML = 'Get your API key from: <a href="https://developers.google.com/custom-search" target="_blank">Google Custom Search</a>';
+                }
+            }
+        }
+
         // Event listeners
         document.getElementById('ai_enabled').addEventListener('change', toggleAISection);
         document.getElementById('ai_provider').addEventListener('change', updateProviderSections);
+        document.getElementById('internet_access_enabled').addEventListener('change', toggleInternetAccessSection);
+        document.getElementById('search_method').addEventListener('change', updateSearchMethodSection);
 
         // Save settings
         document.getElementById('settingsForm').addEventListener('submit', async (e) => {
@@ -509,7 +583,10 @@
                 feature_alternatives: document.getElementById('feature_alternatives').checked,
                 feature_chat: document.getElementById('feature_chat').checked,
                 feature_analysis: document.getElementById('feature_analysis').checked,
-                feature_recommendations: document.getElementById('feature_recommendations').checked
+                feature_recommendations: document.getElementById('feature_recommendations').checked,
+                internet_access_enabled: document.getElementById('internet_access_enabled').checked,
+                search_method: document.getElementById('search_method').value,
+                search_api_key: document.getElementById('search_api_key').value || null
             };
 
             try {

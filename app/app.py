@@ -105,6 +105,50 @@ def init_db():
                 """)
                 print("Added ollama_model column to admin_settings table")
 
+            # Migration: Add tool calling columns
+            tool_columns = [
+                ("internet_access_enabled", "BOOLEAN DEFAULT FALSE"),
+                ("search_method", "ENUM('free_scraping', 'serpapi', 'google_custom') DEFAULT 'free_scraping'"),
+                ("search_api_key", "TEXT"),
+                ("tool_calling_enabled", "BOOLEAN DEFAULT TRUE")
+            ]
+
+            for col_name, col_def in tool_columns:
+                cursor.execute("""
+                    SELECT COUNT(*) as count
+                    FROM information_schema.COLUMNS
+                    WHERE TABLE_SCHEMA = %s
+                    AND TABLE_NAME = 'admin_settings'
+                    AND COLUMN_NAME = %s
+                """, (DB_CONFIG['database'], col_name))
+                result = cursor.fetchone()
+                if result[0] == 0:
+                    cursor.execute(f"""
+                        ALTER TABLE admin_settings
+                        ADD COLUMN {col_name} {col_def}
+                    """)
+                    print(f"Added {col_name} column to admin_settings table")
+
+            # Migration: Create tool_call_logs table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS tool_call_logs (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    user_id INT NOT NULL,
+                    tool_name VARCHAR(100) NOT NULL,
+                    input_params JSON,
+                    output_result JSON,
+                    execution_time_ms INT,
+                    status ENUM('success', 'error', 'timeout') DEFAULT 'success',
+                    error_message TEXT,
+                    ai_provider ENUM('claude', 'openai', 'ollama'),
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    INDEX idx_user_tool (user_id, tool_name),
+                    INDEX idx_created_at (created_at),
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                )
+            """)
+            print("Created tool_call_logs table")
+
             connection.commit()
             cursor.close()
             connection.close()
@@ -532,13 +576,24 @@ def admin_settings():
             cursor.close()
             connection.close()
 
-            # Don't send the actual API key
+            # Don't send the actual API keys
             if settings and settings.get('api_key_encrypted'):
                 settings['api_key_encrypted'] = '***REDACTED***'
+            if settings and settings.get('search_api_key'):
+                settings['search_api_key'] = '***REDACTED***'
 
             # Ensure ollama_model has a default value
             if settings and not settings.get('ollama_model'):
                 settings['ollama_model'] = 'llama3.2'
+
+            # Ensure new fields have default values
+            if settings:
+                if 'internet_access_enabled' not in settings:
+                    settings['internet_access_enabled'] = False
+                if 'search_method' not in settings:
+                    settings['search_method'] = 'free_scraping'
+                if 'tool_calling_enabled' not in settings:
+                    settings['tool_calling_enabled'] = True
 
             return jsonify(settings), 200
         except Error as e:
@@ -553,7 +608,9 @@ def admin_settings():
                 SET ai_enabled = %s, ai_provider = %s, api_key_encrypted = %s,
                     ollama_model = %s,
                     feature_alternatives = %s, feature_chat = %s,
-                    feature_analysis = %s, feature_recommendations = %s
+                    feature_analysis = %s, feature_recommendations = %s,
+                    internet_access_enabled = %s, search_method = %s,
+                    search_api_key = %s
                 WHERE id = 1
             """, (
                 data.get('ai_enabled', False),
@@ -563,7 +620,10 @@ def admin_settings():
                 data.get('feature_alternatives', False),
                 data.get('feature_chat', False),
                 data.get('feature_analysis', False),
-                data.get('feature_recommendations', False)
+                data.get('feature_recommendations', False),
+                data.get('internet_access_enabled', False),
+                data.get('search_method', 'free_scraping'),
+                data.get('search_api_key', None)
             ))
             connection.commit()
             cursor.close()
