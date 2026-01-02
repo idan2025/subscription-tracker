@@ -1,0 +1,72 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: subscription-tracker-prod
+  namespace: argocd
+  # Finalizer ensures proper cleanup
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  # Project name (default is fine)
+  project: default
+
+  # Source repository configuration
+  source:
+    repoURL: https://github.com/idan2025/subscription-tracker.git
+    targetRevision: main
+    path: helm-charts/subscription-tracker
+    helm:
+      # Values file to use (optional)
+      # valueFiles:
+      #   - values.yaml
+
+      # Override values
+      values: |
+        image:
+          repository: idan2025/subscription-tracker
+          tag: latest
+          pullPolicy: Always
+
+        replicaCount: 2
+
+        mysql:
+          persistence:
+            enabled: true
+            size: 5Gi
+
+  # Destination cluster and namespace
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: subscription-tracker
+
+  # Sync policy
+  syncPolicy:
+    # Automated sync configuration
+    automated:
+      # Automatically sync when changes detected
+      prune: true
+      # Allow deletion of resources
+      selfHeal: true
+      # Auto-heal when cluster state differs
+      allowEmpty: false
+
+    # Sync options
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+
+    # Retry configuration
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+
+  # Ignore differences in certain fields
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
