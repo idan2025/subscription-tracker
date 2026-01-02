@@ -93,3 +93,10 @@ kubectl describe pod <pod-name> -n subscription-tracker
 ```bash
 curl http://192.168.223.30/health
 ```
+
+**Service endpoints**
+
+The app runs on the cluster IP. Check the service:
+```bash
+kubectl get svc -n subscription-tracker
+```
